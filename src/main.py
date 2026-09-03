@@ -43,7 +43,8 @@ def parse_ust(ust_filepath):
                 current_block = new_note
             else:
                 # If a header which is not recognised is encountered, warn the user and make sure no block is written to
-                print("Encountered unknown header.")
+                print("Encountered unknown header:")
+                print(line)
                 current_block = None
         elif '=' in line and current_block is not None:
             # If the line seems to contain a key value pair ("=") and a block is currently being written to, parse it
@@ -53,7 +54,8 @@ def parse_ust(ust_filepath):
             current_block[key.strip()] = value.strip()
         else:
             # Warn the user if a line is encountered that the script doesnt know what to do with
-            print("Encountered unknown line")
+            print("Encountered unknown line:")
+            print(line)
     
     # Close file and return
     file.close()
@@ -80,12 +82,20 @@ def convert_to_dectalk(ust_data):
         length = int(round((ust_length/480) * (60000/tempo)))
 
         # Get pre-utterance
-        pre_utterance = int(note["PreUtterance"])
+        # TODO: Modify this to handle other non-numbers or the preutterance not existing
+        # TODO: Check if dectalk supports floats for preutterance, if so, use floats instead of ints
+        
+        if (not note['PreUtterance']):
+            pre_utterance = 0
+        else:
+            pre_utterance = int(float(note['PreUtterance']))
         
         # Get the note number
-        note_number = int(note["NoteNum"]) - 42
+        note_number = int(note['NoteNum']) - 42
 
         # If the ust's lyric is mapped, convert it, if not, warn the user and replace it with a rest
+        # TODO: Something better than just taking the last chatacter
+        ust_lyric = ust_lyric[-1:]
         if ust_lyric not in PHONEME_MAP:
             print('Lyric "' + ust_lyric + '" not mapped, substitution rest')
             lyric = ["", "", ""]
@@ -190,9 +200,14 @@ if __name__ == "__main__":
     print("Started")
     # Define name for file holfing the dectalk string
     dectalk_string_path = "project/temp.txt"
+    # Define the path of the source ust
+    ust_filepath = "project/Love Is War (Crusher Remix).ust"
+    # Define the type of ust file (CV or CVC)
+    # TODO: Actually use this instead of just taking the last character for VCV
+    file_type = "CV"
     
     # Parse the ust file
-    ust_data = parse_ust("project/A Sardine Grows From The Soil (CV).ust")
+    ust_data = parse_ust(ust_filepath)
 
     # Convert the ust file to a dectalk string
     dectalk_string = convert_to_dectalk(ust_data)
