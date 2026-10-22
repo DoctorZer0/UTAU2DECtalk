@@ -65,9 +65,15 @@ def parse_ust(ust_filepath):
 def convert_to_dectalk(ust_data, default_preutterance=40):
     # Get the tempo from the ust data
     tempo = float(ust_data['settings']['Tempo'])
+    # Caclulate the ms per tick from the tempo
+    ms_per_tick = 60000 / tempo / 480
     
     # Begin the string for dectalk
     dectalk_string = "["
+
+    # Set up variables to keep track of the elapsed time
+    elapsed_ticks = 0
+    prev_end_ms = 0
 
     # Iterate through the notes
     for note in ust_data["notes"]:
@@ -76,11 +82,15 @@ def convert_to_dectalk(ust_data, default_preutterance=40):
         # Get the lyric from the ust data
         ust_lyric = note["Lyric"]
 
-        # Get the note length
-        ust_length = int(note["Length"])
-        # Convert the length
-        length = int(round((ust_length/480) * (60000/tempo)))
-
+        # Add this notes length to the total elapsed ticks
+        elapsed_ticks += int(note["Length"]) 
+        # Round the elapsed ms
+        end_ms = round(elapsed_ticks * ms_per_tick)
+        # Get the length of this note based on the difference between the current
+        # end time and previous end time
+        length = end_ms - prev_end_ms
+        prev_end_ms = end_ms
+        
         # Get pre-utterance
         try:
             pre_utterance = int(round(float(note.get('PreUtterance', ''))))
@@ -88,10 +98,12 @@ def convert_to_dectalk(ust_data, default_preutterance=40):
             pre_utterance = 0
 
         # Restrict pre_utterance to be between 0 and the length og the note
-        
-        pre_utterance = max(default_preutterance, pre_utterance) # floor 
-        pre_utterance = min(pre_utterance, length // 2) # cap
-        pre_utterance = max(1, pre_utterance) # Prevent zero (zero would result in dectalk using its default)
+        # floor
+        pre_utterance = max(default_preutterance, pre_utterance)
+        # cap
+        pre_utterance = min(pre_utterance, length // 2)
+        # Prevent zero (zero would result in dectalk using its default)
+        pre_utterance = max(1, pre_utterance)
         
         # Get the note number
         note_number = int(note['NoteNum']) - 42
