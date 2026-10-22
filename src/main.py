@@ -113,7 +113,7 @@ def convert_to_dectalk(ust_data, default_preutterance):
         ust_lyric = ust_lyric.split()[-1]
 
         if ust_lyric not in PHONEME_MAP:
-            print('Lyric "' + ust_lyric + '" not mapped, substitution rest')
+            print('Lyric "' + ust_lyric + '" not mapped, substituting rest')
             lyric = ["", "", ""]
         else:
             lyric = PHONEME_MAP[ust_lyric]
