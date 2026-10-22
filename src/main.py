@@ -1,5 +1,5 @@
 import subprocess
-import os
+import argparse
 from phoneme_map import PHONEME_MAP
 
 
@@ -62,7 +62,7 @@ def parse_ust(ust_filepath):
     return ust_data
 
 # This function creates the string for dectalk from the parsed data
-def convert_to_dectalk(ust_data, default_preutterance=40):
+def convert_to_dectalk(ust_data, default_preutterance):
     # Get the tempo from the ust data
     tempo = float(ust_data['settings']['Tempo'])
     # Caclulate the ms per tick from the tempo
@@ -213,24 +213,47 @@ def run_dectalk(binary_path = "dectalk/say", wav_path = "project/result.wav", te
 
 
 if __name__ == "__main__":
-    print("Started")
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description="Convert a UST file to a DECtalk string and render it to a WAV."
+    )
+    parser.add_argument(
+        "ust_filepath",
+        help="Path to the source .ust file (required)"
+    )
+    parser.add_argument(
+        "-s", "--dectalk-string-path",
+        default="project/temp.txt",
+        help="Path of the file the DECtalk string is written to (default: %(default)s)"
+    )
+    parser.add_argument(
+        "-p", "--default-preutterance",
+        type=int,
+        default=40,
+        help="Default pre-utterance in ms (default: %(default)s)"
+    )
+    args = parser.parse_args()
+
+    print("Started...")
+
     # Define name for file holfing the dectalk string
     dectalk_string_path = "project/temp.txt"
     # Define the path of the source ust
     ust_filepath = "project/Love Is War (Crusher Remix).ust"
     
     # Parse the ust file
-    ust_data = parse_ust(ust_filepath)
+    ust_data = parse_ust(args.ust_filepath)
 
     # Convert the ust file to a dectalk string
-    dectalk_string = convert_to_dectalk(ust_data)
+    dectalk_string = convert_to_dectalk(ust_data, args.default_preutterance)
     
     # Write the dectalk string to a file
-    dectalk_string_file = open(dectalk_string_path, 'w')
+    dectalk_string_file = open(args.dectalk_string_path, 'w')
     dectalk_string_file.write(dectalk_string)
     dectalk_string_file.close()
 
     # Run dectalk
-    run_dectalk(text_path=dectalk_string_path)
+    run_dectalk(text_path=args.dectalk_string_path)
 
     print("Finished")
