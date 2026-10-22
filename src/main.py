@@ -233,15 +233,20 @@ if __name__ == "__main__":
         default=40,
         help="Default pre-utterance in ms (default: %(default)s)"
     )
+    parser.add_argument(
+        "-o", "--wav-path",
+        default="project/result.wav",
+        help="Path of the output WAV file (default: %(default)s)"
+    )
+    parser.add_argument(
+        "-b", "--binary-path",
+        default="dectalk/say",
+        help='Path to the DECtalk "say" binary (default: %(default)s)'
+    )
     args = parser.parse_args()
 
     print("Started...")
 
-    # Define name for file holfing the dectalk string
-    dectalk_string_path = "project/temp.txt"
-    # Define the path of the source ust
-    ust_filepath = "project/Love Is War (Crusher Remix).ust"
-    
     # Parse the ust file
     ust_data = parse_ust(args.ust_filepath)
 
@@ -254,6 +259,6 @@ if __name__ == "__main__":
     dectalk_string_file.close()
 
     # Run dectalk
-    run_dectalk(text_path=args.dectalk_string_path)
+    run_dectalk(binary_path=args.binary_path, wav_path=args.wav_path, text_path=args.dectalk_string_path)
 
     print("Finished")
