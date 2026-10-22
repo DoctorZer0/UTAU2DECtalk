@@ -62,7 +62,7 @@ def parse_ust(ust_filepath):
     return ust_data
 
 # This function creates the string for dectalk from the parsed data
-def convert_to_dectalk(ust_data):
+def convert_to_dectalk(ust_data, default_preutterance=40):
     # Get the tempo from the ust data
     tempo = float(ust_data['settings']['Tempo'])
     
@@ -82,20 +82,24 @@ def convert_to_dectalk(ust_data):
         length = int(round((ust_length/480) * (60000/tempo)))
 
         # Get pre-utterance
-        # TODO: Modify this to handle other non-numbers or the preutterance not existing
-        # TODO: Check if dectalk supports floats for preutterance, if so, use floats instead of ints
-        
-        if (not note['PreUtterance']):
+        try:
+            pre_utterance = int(round(float(note.get('PreUtterance', ''))))
+        except ValueError:
             pre_utterance = 0
-        else:
-            pre_utterance = int(float(note['PreUtterance']))
+
+        # Restrict pre_utterance to be between 0 and the length og the note
+        
+        pre_utterance = max(default_preutterance, pre_utterance) # floor 
+        pre_utterance = min(pre_utterance, length // 2) # cap
+        pre_utterance = max(1, pre_utterance) # Prevent zero (zero would result in dectalk using its default)
         
         # Get the note number
         note_number = int(note['NoteNum']) - 42
 
         # If the ust's lyric is mapped, convert it, if not, warn the user and replace it with a rest
-        # TODO: Something better than just taking the last chatacter
-        ust_lyric = ust_lyric[-1:]
+        # Get just the last part of the lyric (needed for VCV)
+        ust_lyric = ust_lyric.split()[-1]
+
         if ust_lyric not in PHONEME_MAP:
             print('Lyric "' + ust_lyric + '" not mapped, substitution rest')
             lyric = ["", "", ""]
@@ -152,7 +156,7 @@ def convert_to_dectalk(ust_data):
 
             dectalk_string += lyric[1]
             dectalk_string += "<"
-            dectalk_string += str(round(pre_utterance / 2))
+            dectalk_string += str(pre_utterance - round(pre_utterance / 2))
             dectalk_string += ","
             dectalk_string += str(note_number)
             dectalk_string += ">"
@@ -202,9 +206,6 @@ if __name__ == "__main__":
     dectalk_string_path = "project/temp.txt"
     # Define the path of the source ust
     ust_filepath = "project/Love Is War (Crusher Remix).ust"
-    # Define the type of ust file (CV or CVC)
-    # TODO: Actually use this instead of just taking the last character for VCV
-    file_type = "CV"
     
     # Parse the ust file
     ust_data = parse_ust(ust_filepath)
